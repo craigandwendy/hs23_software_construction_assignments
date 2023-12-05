@@ -1,36 +1,49 @@
 import sys
+
 from architecture import OPS, VMState
 from vm_extend import VirtualMachineExtend
 
+
 class VirtualMachineBreak(VirtualMachineExtend):
+    # [init]
     def __init__(self):
         super().__init__()
         self.breaks = {}
-        self.watchpoints = {}
+        self.watchpoints = {}  # 4.4
         self.handlers |= {
             "b": self._do_add_breakpoint,
             "break": self._do_add_breakpoint,
             "c": self._do_clear_breakpoint,
             "clear": self._do_clear_breakpoint,
-            "w": self._do_add_watchpoint,
-            "watch": self._do_add_watchpoint,
-            "cw": self._do_clear_watchpoint,
-            "clearwatch": self._do_clear_watchpoint,
+            "watchpoint": self._do_add_watchpoint  # 4.4
         }
+    # [/init]
 
-    def show(self, *args):
+    # [show]
+    def show(self, *args):  # *args added
         try:
-            super().show(args[0])
+            super().show(args[0])  # args added
         except:
             super().show()
         if self.breaks:
             self.write("-" * 6)
             for key, instruction in self.breaks.items():
                 self.write(f"{key:06x}: {self.disassemble(key, instruction)}")
+    # [/show]
 
+    # [run]
     def run(self):
         self.state = VMState.STEPPING
         while self.state != VMState.FINISHED:
+
+            # check if any value at address has changed compared to original memory
+            for addr in self.watchpoints:
+                if self.ram[addr] != self.watchpoints[addr]:  # value at address addr changed
+                    self.state = VMState.STEPPING  # change state to stepping
+                    self.write(f"Value at {addr} changed from {self.watchpoints[addr]} to {self.ram[addr]}")  # show message
+                    self._do_add_watchpoint(addr)  # update value at address
+
+
             instruction = self.ram[self.ip]
             op, arg0, arg1 = self.decode(instruction)
             if op == OPS["brk"]["code"]:
@@ -44,81 +57,34 @@ class VirtualMachineBreak(VirtualMachineExtend):
                     self.interact(self.ip)
                 self.ip += 1
                 self.execute(op, arg0, arg1)
+    # [/run]
 
-    def _do_add_breakpoint(self, addr, addr_arg=None):
-        if addr_arg is not None:
-            try:
-                addr = int(addr_arg[0], 16)  # Convert hexadecimal string to integer
-            except ValueError:
-                self.write("Invalid address format\n")
-                return True
-        else:
-            self.write("No address specified for breakpoint\n")
-            return True
-
-        if addr in self.breaks:
-            self.write(f"Breakpoint already set at {addr:06x}\n")
-            return True
-
+    # [add]
+    def _do_add_breakpoint(self, addr):
+        if self.ram[addr] == OPS["brk"]["code"]:
+            return
         self.breaks[addr] = self.ram[addr]
         self.ram[addr] = OPS["brk"]["code"]
-        self.write(f"Breakpoint set at {addr:06x}\n")
         return True
+    # [/add]
 
-
-    def _do_clear_breakpoint(self, addr, addr_arg=None):
-        if addr_arg is not None:
-            try:
-                addr = int(addr_arg[0], 16)  # Convert hexadecimal string to integer
-            except ValueError:
-                self.write("Invalid address format\n")
-                return True
-        else:
-            self.write("No address specified to clear breakpoint\n")
-            return True
-
-        if addr not in self.breaks:
-            self.write(f"No breakpoint set at {addr:06x}\n")
-            return True
-
+    # [clear]
+    def _do_clear_breakpoint(self, addr):
+        if self.ram[addr] != OPS["brk"]["code"]:
+            return
         self.ram[addr] = self.breaks[addr]
         del self.breaks[addr]
-        self.write(f"Breakpoint cleared at {addr:06x}\n")
         return True
+    # [/clear]
 
-
-    def _do_add_watchpoint(self, addr, addr_arg=None):
-        if addr_arg is not None:
-            try:
-                addr = int(addr_arg[0], 16)  # Convert hexadecimal string to integer
-            except ValueError:
-                self.write("Invalid address format\n")
-                return True
-        else:
-            self.write("No address specified for watchpoint\n")
-            return True
-
-        self.watchpoints[addr] = self.ram[addr]
-        self.write(f"Watchpoint set at {addr:06x}\n")
+    # [watchpoint]
+    def _do_add_watchpoint(self, addr):
+        # if self.ram[addr] == OPS["wtp"]["code"]:
+        #     return
+        self.watchpoints[addr] = self.ram[addr]  # original instructions saved in dict -> {4: 120401}
+        # self.ram[addr] = OPS["wtp"]["code"]
         return True
-
-
-    def _do_clear_watchpoint(self, addr, addr_arg=None):
-        if addr_arg is not None:
-            try:
-                addr = int(addr_arg[0], 16)  # Convert hexadecimal string to integer
-            except ValueError:
-                self.write("Invalid address format\n")
-                return True
-        else:
-            self.write("No address specified to clear watchpoint\n")
-            return True
-
-        if addr in self.watchpoints:
-            del self.watchpoints[addr]
-            self.write(f"Watchpoint cleared at {addr:06x}\n")
-        else:
-            self.write(f"No watchpoint set at {addr:06x}\n")
+    # [/watchpoint]
 
 
 if __name__ == "__main__":

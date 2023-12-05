@@ -126,6 +126,8 @@ class VirtualMachineBase:
         """Show the IP, registers, and memory."""
         # Show IP and registers
 
+        # print(f"\n*args = {args}\n")  # delete this line
+
         self.write(f"IP{' ' * 6}= {self.ip:06x}")
         for (i, r) in enumerate(self.reg):
             self.write(f"R{i:06x} = {r:06x}")

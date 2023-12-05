@@ -64,6 +64,7 @@ class VirtualMachineStep(VirtualMachineBase):
 
     # [read]
     def read(self, prompt, *args):
+        # print(f"\n*args = {args}\n")  # delete this line
         return self.reader(prompt).strip()
     # [/read]
 
