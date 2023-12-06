@@ -2,9 +2,9 @@
 Software Construction HS23, University of Zurich, Supervision Prof. Dr. Bacchelli
 
 Authors:
-* Ece Zeynep Asirim (ecezeynep.asirim@uzh.ch)
-* Mara Miruna Bucur (maramiruna.bucur@uzh.ch)
-* Smail Alijagic (smail.alijagic@uzh.ch)
+* Ece Zeynep Asirim
+* Mara Miruna Bucur
+* Smail Alijagic
 ***
 
 # Table of Contents
